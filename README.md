@@ -7,7 +7,7 @@
 
 ## Installation
 
-This provides a sensor that shows details of a AWS S3 Bucket - size (in GB) and number of objects. You will need an `Access Key` and `Secret` from AWS that has `ListAllMyBuckets` and `List Bucket` Permissions.
+This provides a sensor that shows details of a AWS S3 Bucket - size (in GB) and number of objects. You will need an `Access Key` and `Secret` from AWS that has `ListAllMyBuckets` and `ListBucket` permissions for the S3 service.
 
 ### Install Custom Components
 
@@ -18,7 +18,7 @@ This provides a sensor that shows details of a AWS S3 Bucket - size (in GB) and 
 5) Click add and restart HA to let the integration load
 6) Go to settings and choose `Devices & Services`
 7) Click `Add Integration` and search for `S3 Bucket Info`
-8) Configure the integration by copying your `Bucket Name` `AWS Credentials` when prompted
+8) Configure the integration by copying your `Bucket Name` and `AWS Credentials` when prompted
 
 ## Usage
 
