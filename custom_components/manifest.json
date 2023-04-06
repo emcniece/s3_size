@@ -1,0 +1,12 @@
+{
+    "domain": "s3_size",
+    "name": "S3 Size Sensor",
+    "documentation": "https://github.com/hokiebrian/s3_size",
+    "dependencies": ["config"],
+    "codeowners": ["@hokiebrian"],
+    "version": "0.0.5",
+    "config_flow": true,
+    "requirements": ["boto3"],
+    "iot_class": "data"
+  }
+  

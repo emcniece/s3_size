@@ -1,0 +1,16 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Enter the required information",
+                "data": {
+                    "app_name": "S3 Bucket Info",
+                    "bucket_name": "AWS Bucket Name",
+                    "aws_access_key_id": "AWS Access Key ID",
+                    "aws_secret_access_key": "AWS Secret Access Key",
+                    "region_name": "Region Name"
+                }
+            }
+        }
+    }
+}
