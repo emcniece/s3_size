@@ -4,7 +4,7 @@
     "documentation": "https://github.com/hokiebrian/s3_size",
     "dependencies": ["config"],
     "codeowners": ["@hokiebrian"],
-    "version": "0.2.2",
+    "version": "0.1.0",
     "config_flow": true,
     "requirements": ["boto3"],
     "iot_class": "data"

@@ -27,23 +27,23 @@ async def async_setup_entry(
     aws_access_key_id = entry.data[CONF_ACCESS_KEY_ID]
     aws_secret_access_key = entry.data[CONF_SECRET_ACCESS_KEY]
 
-    sensor = S3SizeSensor(
-        bucket_name,
-        region_name,
-        aws_access_key_id,
-        aws_secret_access_key
-    )
-    async_add_entities([sensor], True)
+    aws_config = {
+        CONF_REGION_NAME: region_name,
+        CONF_ACCESS_KEY_ID: aws_access_key_id,
+        CONF_SECRET_ACCESS_KEY: aws_secret_access_key,
+    }
+    s3 = boto3.client("s3", **aws_config)
+
+    sensor = S3SizeSensor(s3, bucket_name)
+    async_add_entities([sensor])
 
 class S3SizeSensor(RestoreEntity):
     """Representation of an S3 size sensor."""
 
-    def __init__(self, bucket_name: str, region_name: str, aws_access_key_id: str, aws_secret_access_key: str):
+    def __init__(self, s3, bucket_name: str):
         """Initialize the sensor."""
         self._bucket_name = bucket_name
-        self._region_name = region_name
-        self._aws_access_key_id = aws_access_key_id
-        self._aws_secret_access_key = aws_secret_access_key
+        self._s3 = s3
         self._object_count = None
         self._total_size = None
 
@@ -59,13 +59,6 @@ class S3SizeSensor(RestoreEntity):
 
     async def s3_size_update(self, call):
         """Update the sensor."""
-        aws_config = {
-            CONF_REGION_NAME: self._region_name,
-            CONF_ACCESS_KEY_ID: self._aws_access_key_id,
-            CONF_SECRET_ACCESS_KEY: self._aws_secret_access_key,
-        }
-        s3 = boto3.client("s3", **aws_config)
-
         total_size = 0
         object_count = 0
         continuation_token = None
@@ -76,7 +69,7 @@ class S3SizeSensor(RestoreEntity):
                 list_objects_args["ContinuationToken"] = continuation_token
 
             objects = await self.hass.async_add_executor_job(
-                lambda: s3.list_objects_v2(Bucket=self._bucket_name, **list_objects_args))
+                lambda: self._s3.list_objects_v2(Bucket=self._bucket_name, **list_objects_args))
 
             contents = objects.get("Contents", [])
             sizes = [obj["Size"] for obj in contents]
@@ -91,9 +84,8 @@ class S3SizeSensor(RestoreEntity):
         self._total_size = total_size
 
         if self._total_size is None:
-            self._state =  None
-        else:
-            self._state = round(self._total_size / 1_000_000_000, 2)
+            self._state = None
+        self._state = round(self._total_size / 1_000_000_000, 2)
 
         self._attributes = {
             ATTR_BUCKET_NAME: self._bucket_name,
