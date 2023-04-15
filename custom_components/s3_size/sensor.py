@@ -1,5 +1,6 @@
 """S3 Size Sensor in the Billing metric of GB."""
 
+import logging
 import boto3
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -40,12 +41,17 @@ async def async_setup_entry(
 class S3SizeSensor(RestoreEntity):
     """Representation of an S3 size sensor."""
 
+    _LOGGER = logging.getLogger(__name__)
+
     def __init__(self, s3, bucket_name: str):
         """Initialize the sensor."""
+        self._LOGGER = logging.getLogger(__name__)
         self._bucket_name = bucket_name
         self._s3 = s3
         self._object_count = None
         self._total_size = None
+        self._state = None
+        self._attributes = {}
 
     async def async_added_to_hass(self):
         self.hass.services.async_register(DOMAIN, "s3_size_update", self.s3_size_update)
@@ -79,7 +85,7 @@ class S3SizeSensor(RestoreEntity):
                 continuation_token = objects["NextContinuationToken"]
             else:
                 break
-        
+
         self._object_count = object_count
         self._total_size = total_size
 
