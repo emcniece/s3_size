@@ -15,8 +15,9 @@ from .const import (
     ATTR_BUCKET_NAME,
     ATTR_OBJECT_COUNT,
     ATTR_TOTAL_SIZE,
-    DOMAIN
+    DOMAIN,
 )
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
@@ -37,6 +38,7 @@ async def async_setup_entry(
 
     sensor = S3SizeSensor(s3, bucket_name)
     async_add_entities([sensor])
+
 
 class S3SizeSensor(RestoreEntity):
     """Representation of an S3 size sensor."""
@@ -75,7 +77,10 @@ class S3SizeSensor(RestoreEntity):
                 list_objects_args["ContinuationToken"] = continuation_token
 
             objects = await self.hass.async_add_executor_job(
-                lambda: self._s3.list_objects_v2(Bucket=self._bucket_name, **list_objects_args))
+                lambda: self._s3.list_objects_v2(
+                    Bucket=self._bucket_name, **list_objects_args
+                )
+            )
 
             contents = objects.get("Contents", [])
             sizes = [obj["Size"] for obj in contents]

@@ -23,6 +23,7 @@ DATA_SCHEMA = vol.Schema(
     }
 )
 
+
 async def validate_credentials(
     aws_access_key_id: str, aws_secret_access_key: str, region_name: str
 ) -> bool:
@@ -39,6 +40,7 @@ async def validate_credentials(
     except Exception:
         return False
 
+
 class S3SizeFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for the S3 size sensor platform."""
 
@@ -51,7 +53,9 @@ class S3SizeFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             aws_access_key_id = user_input[CONF_ACCESS_KEY_ID]
             aws_secret_access_key = user_input[CONF_SECRET_ACCESS_KEY]
             region_name = user_input[CONF_REGION_NAME]
-            await validate_credentials(aws_access_key_id, aws_secret_access_key, region_name)
+            await validate_credentials(
+                aws_access_key_id, aws_secret_access_key, region_name
+            )
             return self.async_create_entry(title=bucket_name, data=user_input)
 
         return self.async_show_form(
