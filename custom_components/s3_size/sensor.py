@@ -1,5 +1,3 @@
-"""S3 Size Sensor in the Billing metric of GB."""
-
 import logging
 import boto3
 from homeassistant.core import HomeAssistant
@@ -19,41 +17,27 @@ from .const import (
 )
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
-):
-    """Set up the S3 size sensor."""
-
-    bucket_name = entry.data[CONF_BUCKET_NAME]
-    region_name = entry.data.get(CONF_REGION_NAME, DEFAULT_REGION_NAME)
-    aws_access_key_id = entry.data[CONF_ACCESS_KEY_ID]
-    aws_secret_access_key = entry.data[CONF_SECRET_ACCESS_KEY]
-
-    aws_config = {
-        CONF_REGION_NAME: region_name,
-        CONF_ACCESS_KEY_ID: aws_access_key_id,
-        CONF_SECRET_ACCESS_KEY: aws_secret_access_key,
-    }
-    s3 = boto3.client("s3", **aws_config)
-
-    sensor = S3SizeSensor(s3, bucket_name)
-    async_add_entities([sensor])
-
-
 class S3SizeSensor(RestoreEntity):
     """Representation of an S3 size sensor."""
 
     _LOGGER = logging.getLogger(__name__)
 
-    def __init__(self, s3, bucket_name: str):
+    def __init__(self, aws_config: dict, bucket_name: str):
         """Initialize the sensor."""
-        self._LOGGER = logging.getLogger(__name__)
         self._bucket_name = bucket_name
-        self._s3 = s3
+        self._s3 = boto3.client("s3", **aws_config)
         self._object_count = None
         self._total_size = None
         self._state = None
         self._attributes = {}
+
+    @property
+    def bucket_name(self):
+        return self._bucket_name
+
+    @property
+    def s3_client(self):
+        return self._s3
 
     async def async_added_to_hass(self):
         self.hass.services.async_register(DOMAIN, "s3_size_update", self.s3_size_update)
@@ -135,3 +119,18 @@ class S3SizeSensor(RestoreEntity):
     def state_attributes(self):
         """Return the state attributes of the sensor."""
         return self._attributes
+
+
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+):
+    """Set up the S3 size sensor."""
+
+    aws_config = {
+        CONF_REGION_NAME: entry.data.get(CONF_REGION_NAME, DEFAULT_REGION_NAME),
+        CONF_ACCESS_KEY_ID: entry.data[CONF_ACCESS_KEY_ID],
+        CONF_SECRET_ACCESS_KEY: entry.data[CONF_SECRET_ACCESS_KEY],
+    }
+
+    sensor = S3SizeSensor(aws_config, entry.data[CONF_BUCKET_NAME])
+    async_add_entities([sensor])

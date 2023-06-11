@@ -1,5 +1,7 @@
+""" Config Flow for S3 Size Integration """
 import logging
 import boto3
+import botocore.exceptions
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant import config_entries
@@ -25,7 +27,7 @@ DATA_SCHEMA = vol.Schema(
 
 
 async def validate_credentials(
-    aws_access_key_id: str, aws_secret_access_key: str, region_name: str
+    hass, aws_access_key_id: str, aws_secret_access_key: str, region_name: str
 ) -> bool:
     """Validate AWS credentials."""
     try:
@@ -35,9 +37,13 @@ async def validate_credentials(
             CONF_SECRET_ACCESS_KEY: aws_secret_access_key,
         }
         s3 = boto3.client("s3", **aws_config)
-        await s3.list_buckets()
+
+        # Run list_buckets in a separate thread
+        await hass.async_add_executor_job(s3.list_buckets)
+
         return True
-    except Exception:
+    except botocore.exceptions.BotoCoreError as e:
+        _LOGGER.error("Invalid AWS credentials: %s", e)
         return False
 
 
@@ -53,10 +59,16 @@ class S3SizeFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             aws_access_key_id = user_input[CONF_ACCESS_KEY_ID]
             aws_secret_access_key = user_input[CONF_SECRET_ACCESS_KEY]
             region_name = user_input[CONF_REGION_NAME]
-            await validate_credentials(
-                aws_access_key_id, aws_secret_access_key, region_name
+            valid_credentials = await validate_credentials(
+                self.hass,  # add this
+                aws_access_key_id,
+                aws_secret_access_key,
+                region_name,
             )
-            return self.async_create_entry(title=bucket_name, data=user_input)
+            if not valid_credentials:
+                errors["base"] = "invalid_credentials"
+            else:
+                return self.async_create_entry(title=bucket_name, data=user_input)
 
         return self.async_show_form(
             step_id="user",
