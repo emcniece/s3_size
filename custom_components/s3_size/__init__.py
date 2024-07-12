@@ -17,8 +17,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the S3 size sensor platform from a config entry."""
     _LOGGER.info(f"Setting up S3 size sensor platform for entry: {entry.entry_id}")
-
-    await hass.config_entries.async_forward_entry_setup(entry, "sensor")
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
     return True
 
