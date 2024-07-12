@@ -3,6 +3,7 @@ import boto3
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     CONF_BUCKET_NAME,
@@ -16,11 +17,11 @@ from .const import (
     DOMAIN,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class S3SizeSensor(RestoreEntity):
     """Representation of an S3 size sensor."""
-
-    _LOGGER = logging.getLogger(__name__)
 
     def __init__(self, aws_config: dict, bucket_name: str):
         """Initialize the sensor."""
@@ -32,14 +33,18 @@ class S3SizeSensor(RestoreEntity):
         self._attributes = {}
 
     @property
-    def bucket_name(self):
+    def bucket_name(self) -> str:
+        """Return the bucket name."""
         return self._bucket_name
 
     @property
     def s3_client(self):
+        """Return the S3 client."""
         return self._s3
 
     async def async_added_to_hass(self):
+        """Register services and restore last state."""
+        _LOGGER.info("Adding S3 size sensor to Home Assistant")
         self.hass.services.async_register(DOMAIN, "s3_size_update", self.s3_size_update)
         last_state = await self.async_get_last_state()
         if last_state is not None:
@@ -47,6 +52,8 @@ class S3SizeSensor(RestoreEntity):
             self._attributes = dict(last_state.attributes)
 
     async def async_will_remove_from_hass(self):
+        """Unregister services."""
+        _LOGGER.info("Removing S3 size sensor from Home Assistant")
         self.hass.services.async_remove(DOMAIN, "s3_size_update")
 
     async def s3_size_update(self, call):
@@ -67,11 +74,10 @@ class S3SizeSensor(RestoreEntity):
             )
 
             contents = objects.get("Contents", [])
-            sizes = [obj["Size"] for obj in contents]
-            total_size += sum(sizes)
-            object_count += len(sizes)
-            if objects["IsTruncated"]:
-                continuation_token = objects["NextContinuationToken"]
+            total_size += sum(obj["Size"] for obj in contents)
+            object_count += len(contents)
+            if objects.get("IsTruncated"):
+                continuation_token = objects.get("NextContinuationToken")
             else:
                 break
 
@@ -80,7 +86,8 @@ class S3SizeSensor(RestoreEntity):
 
         if self._total_size is None:
             self._state = None
-        self._state = round(self._total_size / 1_000_000_000, 2)
+        else:
+            self._state = round(self._total_size / 1_000_000_000, 2)
 
         self._attributes = {
             ATTR_BUCKET_NAME: self._bucket_name,
@@ -91,45 +98,44 @@ class S3SizeSensor(RestoreEntity):
         self.async_write_ha_state()
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the sensor."""
         return f"S3 Size ({self._bucket_name})"
 
     @property
-    def unique_id(self):
+    def unique_id(self) -> str:
         """Return the unique ID of the sensor."""
         return f"s3_size_{self._bucket_name}"
 
     @property
-    def state(self):
+    def state(self) -> float:
         """Return the current size of the bucket in GB."""
         return self._state
 
     @property
-    def unit_of_measurement(self):
+    def unit_of_measurement(self) -> str:
         """Return the unit of measurement of the sensor."""
         return "GB"
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
         """Return the device class of the sensor."""
         return "storage"
 
     @property
-    def state_attributes(self):
+    def state_attributes(self) -> dict:
         """Return the state attributes of the sensor."""
         return self._attributes
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ):
     """Set up the S3 size sensor."""
-
     aws_config = {
-        CONF_REGION_NAME: entry.data.get(CONF_REGION_NAME, DEFAULT_REGION_NAME),
-        CONF_ACCESS_KEY_ID: entry.data[CONF_ACCESS_KEY_ID],
-        CONF_SECRET_ACCESS_KEY: entry.data[CONF_SECRET_ACCESS_KEY],
+        "region_name": entry.data.get(CONF_REGION_NAME, DEFAULT_REGION_NAME),
+        "aws_access_key_id": entry.data[CONF_ACCESS_KEY_ID],
+        "aws_secret_access_key": entry.data[CONF_SECRET_ACCESS_KEY],
     }
 
     sensor = S3SizeSensor(aws_config, entry.data[CONF_BUCKET_NAME])
