@@ -8,7 +8,8 @@
                     "bucket_name": "AWS Bucket Name",
                     "aws_access_key_id": "AWS Access Key ID",
                     "aws_secret_access_key": "AWS Secret Access Key",
-                    "region_name": "Region Name"
+                    "region_name": "Region Name",
+                    "endpoint_url": "Endpoint URL"
                 }
             }
         }

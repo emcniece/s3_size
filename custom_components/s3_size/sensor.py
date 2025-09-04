@@ -10,7 +10,9 @@ from .const import (
     CONF_ACCESS_KEY_ID,
     CONF_SECRET_ACCESS_KEY,
     CONF_REGION_NAME,
+    CONF_ENDPOINT_URL,
     DEFAULT_REGION_NAME,
+    DEFAULT_ENDPOINT_URL,
     ATTR_BUCKET_NAME,
     ATTR_OBJECT_COUNT,
     ATTR_TOTAL_SIZE,
@@ -136,6 +138,7 @@ async def async_setup_entry(
         "region_name": entry.data.get(CONF_REGION_NAME, DEFAULT_REGION_NAME),
         "aws_access_key_id": entry.data[CONF_ACCESS_KEY_ID],
         "aws_secret_access_key": entry.data[CONF_SECRET_ACCESS_KEY],
+        "endpoint_url": entry.data.get(CONF_ENDPOINT_URL, DEFAULT_ENDPOINT_URL),
     }
 
     sensor = S3SizeSensor(aws_config, entry.data[CONF_BUCKET_NAME])
