@@ -7,6 +7,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant import config_entries
 from .const import (
+    CONF_SENSOR_NAME,
     CONF_BUCKET_NAME,
     CONF_ACCESS_KEY_ID,
     CONF_SECRET_ACCESS_KEY,
@@ -22,6 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_BUCKET_NAME): cv.string,
+        vol.Optional(CONF_SENSOR_NAME): cv.string,
         vol.Required(CONF_ACCESS_KEY_ID): cv.string,
         vol.Required(CONF_SECRET_ACCESS_KEY): cv.string,
         vol.Optional(CONF_REGION_NAME, default=DEFAULT_REGION_NAME): cv.string,
@@ -61,12 +63,13 @@ class S3SizeFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             bucket_name = user_input[CONF_BUCKET_NAME]
+            sensor_name = user_input.get(CONF_SENSOR_NAME, bucket_name)
             aws_access_key_id = user_input[CONF_ACCESS_KEY_ID]
             aws_secret_access_key = user_input[CONF_SECRET_ACCESS_KEY]
             region_name = user_input[CONF_REGION_NAME]
             endpoint_url = user_input[CONF_ENDPOINT_URL]
             valid_credentials = await validate_credentials(
-                self.hass,  # add this
+                self.hass,
                 aws_access_key_id,
                 aws_secret_access_key,
                 region_name,
@@ -75,7 +78,7 @@ class S3SizeFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             if not valid_credentials:
                 errors["base"] = "invalid_credentials"
             else:
-                return self.async_create_entry(title=bucket_name, data=user_input)
+                return self.async_create_entry(title=sensor_name, data=user_input)
 
         return self.async_show_form(
             step_id="user",

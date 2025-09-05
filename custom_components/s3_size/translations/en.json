@@ -2,9 +2,10 @@
     "config": {
         "step": {
             "user": {
-                "description": "Enter the required information",
+                "description": "Enter the required information. Sensor name must be unique, will default to bucket name if left blank.",
                 "data": {
                     "app_name": "S3 Bucket Info",
+                    "sensor_name": "Sensor Name",
                     "bucket_name": "AWS Bucket Name",
                     "aws_access_key_id": "AWS Access Key ID",
                     "aws_secret_access_key": "AWS Secret Access Key",

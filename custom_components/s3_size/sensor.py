@@ -6,6 +6,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    CONF_SENSOR_NAME,
     CONF_BUCKET_NAME,
     CONF_ACCESS_KEY_ID,
     CONF_SECRET_ACCESS_KEY,
@@ -13,6 +14,7 @@ from .const import (
     CONF_ENDPOINT_URL,
     DEFAULT_REGION_NAME,
     DEFAULT_ENDPOINT_URL,
+    ATTR_SENSOR_NAME,
     ATTR_BUCKET_NAME,
     ATTR_OBJECT_COUNT,
     ATTR_TOTAL_SIZE,
@@ -25,8 +27,9 @@ _LOGGER = logging.getLogger(__name__)
 class S3SizeSensor(RestoreEntity):
     """Representation of an S3 size sensor."""
 
-    def __init__(self, aws_config: dict, bucket_name: str):
+    def __init__(self, aws_config: dict, sensor_name: str, bucket_name: str):
         """Initialize the sensor."""
+        self._sensor_name = sensor_name
         self._bucket_name = bucket_name
         self._s3 = boto3.client("s3", **aws_config)
         self._object_count = None
@@ -92,6 +95,7 @@ class S3SizeSensor(RestoreEntity):
             self._state = round(self._total_size / 1_000_000_000, 2)
 
         self._attributes = {
+            ATTR_SENSOR_NAME: self._sensor_name,
             ATTR_BUCKET_NAME: self._bucket_name,
             ATTR_OBJECT_COUNT: self._object_count,
             ATTR_TOTAL_SIZE: self._total_size,
@@ -102,12 +106,12 @@ class S3SizeSensor(RestoreEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"S3 Size ({self._bucket_name})"
+        return f"S3 Size ({self._sensor_name})"
 
     @property
     def unique_id(self) -> str:
         """Return the unique ID of the sensor."""
-        return f"s3_size_{self._bucket_name}"
+        return f"s3_size_{self._sensor_name}"
 
     @property
     def state(self) -> float:
@@ -140,6 +144,5 @@ async def async_setup_entry(
         "aws_secret_access_key": entry.data[CONF_SECRET_ACCESS_KEY],
         "endpoint_url": entry.data.get(CONF_ENDPOINT_URL, DEFAULT_ENDPOINT_URL),
     }
-
-    sensor = S3SizeSensor(aws_config, entry.data[CONF_BUCKET_NAME])
+    sensor = S3SizeSensor(aws_config, entry.title, entry.data[CONF_BUCKET_NAME])
     async_add_entities([sensor])
